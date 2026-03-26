@@ -249,7 +249,23 @@ def avg_location_rating_by_room_type(data) -> dict:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    totals = {}
+    counts = {}
+    for row in data:
+        room_type = row[5]
+        location_rating = row[6]
+        if location_rating == 0.0:
+            continue
+
+        totals[room_type] = totals.get(room_type, 0.0) + location_rating
+        counts[room_type] = counts.get(room_type, 0) + 1
+
+    averages = {}
+    for room_type in totals:
+        averages[room_type] = round(totals[room_type] / counts[room_type], 10)
+
+
+    return averages
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
