@@ -1,4 +1,4 @@
-# SI 201 HW4 (Library Checkout System)
+# SI 201 Project 2
 # Your name: Analu Jahi, Antonio Said
 # Your student id: 41395396, 78519368
 # Your email: analuj@umich.edu, awsaid@umich.edu
