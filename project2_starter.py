@@ -1,8 +1,8 @@
 # SI 201 HW4 (Library Checkout System)
-# Your name: Analu Jahi
-# Your student id: 41395396
-# Your email: analuj@umich.edu
-# Who or what you worked with on this homework (including generative AI like ChatGPT): Antonio Said
+# Your name: Analu Jahi, Antonio Said
+# Your student id: 41395396, 78519368
+# Your email: analuj@umich.edu, awsaid@umich.edu
+# Who or what you worked with on this homework (including generative AI like ChatGPT):
 # If you worked with generative AI also add a statement for how you used it.
 # e.g.:
 # Asked ChatGPT for hints on debugging and for suggestions on overall code structure
