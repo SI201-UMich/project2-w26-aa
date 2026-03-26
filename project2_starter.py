@@ -1,8 +1,8 @@
 # SI 201 HW4 (Library Checkout System)
-# Your name:
-# Your student id:
-# Your email:
-# Who or what you worked with on this homework (including generative AI like ChatGPT):
+# Your name: Analu Jahi
+# Your student id: 41395396
+# Your email: analuj@umich.edu
+# Who or what you worked with on this homework (including generative AI like ChatGPT): Antonio Said
 # If you worked with generative AI also add a statement for how you used it.
 # e.g.:
 # Asked ChatGPT for hints on debugging and for suggestions on overall code structure
@@ -26,6 +26,8 @@ If you are getting "encoding errors" while trying to open, read, or write from a
     encoding="utf-8-sig"
 """
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 
 def load_listing_results(html_path) -> list[tuple]:
     """
@@ -37,14 +39,40 @@ def load_listing_results(html_path) -> list[tuple]:
     Returns:
         list[tuple]: A list of tuples containing (listing_title, listing_id)
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    with open(html_path, encoding="utf-8-sig") as f:
+        soup = BeautifulSoup(f, "html.parser")
+
+    results = []
+    seen_ids = set()
+
+    links = soup.find_all("a", href=re.compile(r"/rooms(?:/plus)?/\d+"))
+    for a in links:
+        href = a.get("href", "")
+        m = re.search(r"/rooms(?:/plus)?/([0-9]+)", href)
+        if not m:
+            continue
+        listing_id = m.group(1)
+        if listing_id in seen_ids:
+            continue
+        seen_ids.add(listing_id)
+
+        # Walk up the DOM to find a parent element that contains the listing title
+        parent = a.parent
+        title = None
+        for _ in range(12):
+            text = parent.get_text(separator="|").strip()
+            parts = [p.strip() for p in text.split("|") if p.strip()]
+            if parts and len(parts[0]) > 3:
+                title = parts[0]
+                break
+            parent = parent.parent
+            if parent is None:
+                break
+
+        if title is not None:
+            results.append((title, listing_id))
+
+    return results
 
 
 def get_listing_details(listing_id) -> dict:
@@ -66,14 +94,82 @@ def get_listing_details(listing_id) -> dict:
             }
         }
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    html_path = os.path.join(BASE_DIR, "html_files", f"listing_{listing_id}.html")
+    with open(html_path, encoding="utf-8-sig") as f:
+        soup = BeautifulSoup(f, "html.parser")
+
+    # --- Policy number ---
+    policy_number = None
+    for li in soup.find_all("li"):
+        txt = li.get_text()
+        if "Policy number" in txt or "policy number" in txt:
+            span = li.find("span")
+            if span:
+                raw = span.get_text().strip()
+            else:
+                raw = re.sub(r"[Pp]olicy number:?\s*", "", txt).strip()
+            # Strip BOM and extra whitespace
+            raw = raw.replace("\ufeff", "").strip()
+            # Categorize
+            if raw.lower() == "pending":
+                policy_number = "Pending"
+            elif raw.lower() == "exempt":
+                policy_number = "Exempt"
+            else:
+                policy_number = raw
+            break
+    if policy_number is None:
+        policy_number = "Exempt"
+
+    # --- Host type ---
+    host_type = "regular"
+    for span in soup.find_all("span"):
+        if span.get_text().strip() == "Superhost":
+            host_type = "Superhost"
+            break
+
+    # --- Host name and room type ---
+    # The h2 element that contains "hosted by" has the subtitle and host name
+    host_name = ""
+    room_type = "Entire Room"
+    for h2 in soup.find_all("h2"):
+        txt = h2.get_text()
+        if "hosted by" in txt.lower():
+            # Extract name after "hosted by"
+            name_raw = re.sub(r".*hosted by\s*", "", txt, flags=re.IGNORECASE).strip()
+            # Normalize non-breaking spaces
+            host_name = name_raw.replace("\xa0", " ").strip()
+            # Determine room type from the subtitle
+            if "Private" in txt:
+                room_type = "Private Room"
+            elif "Shared" in txt:
+                room_type = "Shared Room"
+            else:
+                room_type = "Entire Room"
+            break
+
+    # --- Location rating ---
+    location_rating = 0.0
+    for div in soup.find_all("div", class_="_y1ba89"):
+        if div.get_text().strip() == "Location":
+            parent = div.parent
+            rating_span = parent.find("span", {"aria-hidden": "true"})
+            if rating_span:
+                try:
+                    location_rating = float(rating_span.get_text().strip())
+                except ValueError:
+                    pass
+            break
+
+    return {
+        listing_id: {
+            "policy_number": policy_number,
+            "host_type": host_type,
+            "host_name": host_name,
+            "room_type": room_type,
+            "location_rating": location_rating,
+        }
+    }
 
 
 def create_listing_database(html_path) -> list[tuple]:
@@ -87,14 +183,23 @@ def create_listing_database(html_path) -> list[tuple]:
         list[tuple]: A list of tuples. Each tuple contains:
         (listing_title, listing_id, policy_number, host_type, host_name, room_type, location_rating)
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    listings = load_listing_results(html_path)
+    database = []
+
+    for listing_title, listing_id in listings:
+        details = get_listing_details(listing_id)
+        inner = details[listing_id]
+        database.append((
+            listing_title,
+            listing_id,
+            inner["policy_number"],
+            inner["host_type"],
+            inner["host_name"],
+            inner["room_type"],
+            inner["location_rating"],
+        ))
+
+    return database
 
 
 def output_csv(data, filename) -> None:
@@ -110,14 +215,21 @@ def output_csv(data, filename) -> None:
     Returns:
         None
     """
-    # TODO: Implement checkout logic following the instructions
-    # ==============================
-    # YOUR CODE STARTS HERE
-    # ==============================
-    pass
-    # ==============================
-    # YOUR CODE ENDS HERE
-    # ==============================
+    sorted_data = sorted(data, key=lambda row: row[6], reverse=True)
+
+    with open(filename, "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "Listing Title",
+            "Listing ID",
+            "Policy Number",
+            "Host Type",
+            "Host Name",
+            "Room Type",
+            "Location Rating",
+        ])
+        for row in sorted_data:
+            writer.writerow(row)
 
 
 def avg_location_rating_by_room_type(data) -> dict:
