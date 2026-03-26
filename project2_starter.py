@@ -249,6 +249,7 @@ def avg_location_rating_by_room_type(data) -> dict:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
+
     totals = {}
     counts = {}
     for row in data:
@@ -266,6 +267,7 @@ def avg_location_rating_by_room_type(data) -> dict:
 
 
     return averages
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
@@ -286,7 +288,22 @@ def validate_policy_numbers(data) -> list[str]:
     # ==============================
     # YOUR CODE STARTS HERE
     # ==============================
-    pass
+    
+    pattern1 = re.compile(r"^20\d{2}-00\d{4}STR$")
+    pattern2 = re.compile(r"^STR-000\d{4}$")
+
+    invalid = []
+
+    for row in data:
+        listing_id = row[1]
+        policy_number = row[2]
+        if policy_number in ("Pending", "Exempt"):
+            continue
+        if not (pattern1.match(policy_number) or pattern2.match(policy_number)):
+            invalid.append(listing_id)
+
+    return invalid
+
     # ==============================
     # YOUR CODE ENDS HERE
     # ==============================
